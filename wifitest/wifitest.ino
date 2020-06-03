@@ -64,8 +64,9 @@ void loop() {
   char request[255];
   int requestLength = 0;
   while (client.available() > 0) {
-    if (requestLength < 254) {
-      request[requestLength++] = client.read();
+    char c = client.read();
+    if (isPrintable(c) && requestLength < 254) {
+      request[requestLength++] = c;
     }
   }
   Serial.print("SENT: ");
