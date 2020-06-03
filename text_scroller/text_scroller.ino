@@ -7,6 +7,7 @@
 // BSD license, all text above must be included in any redistribution.
 
 #include <RGBmatrixPanel.h>
+#include <SoftwareSerial.h>
 
 // Most of the signal pins are configurable, but the CLK pin has some
 // special constraints.  On 8-bit AVR boards it must be on PORTB...
@@ -34,22 +35,48 @@ RGBmatrixPanel matrix(A, B, C, CLK, LAT, OE, false);
 // Arduino Uno -- only a handful of free bytes remain.  Even the
 // following string needs to go in PROGMEM:
 
-// Similar to F(), but for PROGMEM string pointers rather than literals
-#define F2(progmem_ptr) (const __FlashStringHelper *)progmem_ptr
+SoftwareSerial wifiSerial(11, 12); // RX, TX
 
-const char str[] PROGMEM = "Welcome to Computer Science ... ";
-int16_t    textX         = matrix.width(),
-           textMin       = sizeof(str) * -12,
-           hue           = 0;
+// Similar to F(), but for PROGMEM string pointers rather than literals
+
+char    content[255] = "waiting...";
+int     contentMarker = 10;
+int16_t textX         = matrix.width();
+int16_t textMin       = contentMarker * -12;
+int16_t hue           = 0;
 
 void setup() {
   matrix.begin();
   matrix.setTextWrap(false); // Allow text to run off right edge
   matrix.setTextSize(2);
+  wifiSerial.begin(1200);
+  Serial.begin(9600);
+  Serial.println("waiting...");
 }
 
+bool capture = false;
+
 void loop() {
-  byte i;
+  // Read data from serial
+  if (wifiSerial.available() > 0) {
+    // Serial.print("incoming data...");
+    // Serial.println(wifiSerial.available());
+    char c = wifiSerial.read();
+    if (byte(c) == 61) { // Equals sign
+        contentMarker=0;
+        for (int i=0; i<255; i++) {
+          content[i] = ' ';
+        }
+        capture = true;
+        Serial.println("resetting content");
+    } else if (isPrintable(c)) {
+        content[contentMarker++] = c;
+        textMin = contentMarker * -12;
+        Serial.print(c);
+        Serial.print(" ");
+        Serial.println(byte(c));
+    }
+  }
 
   // Clear background
   matrix.fillScreen(0);
@@ -57,14 +84,17 @@ void loop() {
   // Draw big scrolly text on top
   matrix.setTextColor(matrix.ColorHSV(hue, 255, 255, true));
   matrix.setCursor(textX, 1);
-  matrix.print(F2(str));
+  matrix.print(content);
 
   // Move text left (w/wrap), increase hue
-  if((--textX) < textMin) textX = matrix.width();
+  --textX;
+  if (textX < textMin) {
+    textX = matrix.width();
+  }
   hue += 7;
   if(hue >= 1536) hue -= 1536;
 
-  delay(50);
+  delay(60);
   // Update display
   matrix.swapBuffers(false);
 }
