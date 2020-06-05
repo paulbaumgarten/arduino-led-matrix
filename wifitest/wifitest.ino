@@ -5,7 +5,7 @@ const char* ssid = "SCWiFi";
 const char* password = "wifi1234";
 
 int ledPin = 13; // GPIO13
-WiFiServer server(80);
+WiFiServer server(4242);
 SoftwareSerial wifiSerial(5, 4); // RX, TX
 
 void setup() {
@@ -22,9 +22,9 @@ void setup() {
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
-  wifiSerial.print("display=Joining ");
+  wifiSerial.print("{Joining ");
   wifiSerial.print(ssid);
-  wifiSerial.print("\n");
+  wifiSerial.print("}\n");
   wifiSerial.println();
   wifiSerial.flush();
 
@@ -43,7 +43,7 @@ void setup() {
 
   // Print the IP address
   IPAddress ipaddress = WiFi.localIP();
-  String message = "display=" + ipaddress.toString() + "\n";
+  String message = "{" + ipaddress.toString() + "}\n";
   Serial.println("SENT: "+message);
   wifiSerial.println(message);
   wifiSerial.flush();
@@ -63,27 +63,34 @@ void loop() {
   }
   char request[255];
   int requestLength = 0;
+  bool capture = false;
+  bool transmit = false;
   while (client.available() > 0) {
     char c = client.read();
-    if (isPrintable(c) && requestLength < 254) {
+    if (c == '{') {
+      capture = true;
+      request[requestLength++] = '{';
+    } else if (c == '}') {
+      capture = false;
+      request[requestLength++] = '}';
+      transmit = true;
+    }
+    else if (isPrintable(c) && requestLength < 252 && capture) {
       request[requestLength++] = c;
     }
+    delay(1);
   }
-  Serial.print("SENT: ");
-  Serial.println(request);
-  wifiSerial.println(request);
-  wifiSerial.println();  
-  wifiSerial.flush();
-  client.println("ok");
-  client.flush();
-
-  // Set ledPin according to the request
-  //digitalWrite(ledPin, value);
-
-  // Return the response
-  // client.println("HTTP/1.1 200 OK");
-  // client.println("Content-Type: text/plain");
-  // client.println(""); //  do not forget this one
-  client.println("ok");
+  if (transmit) {
+    Serial.print("SENT: ");
+    Serial.println(request);
+    wifiSerial.println(request);
+    wifiSerial.println();  
+    wifiSerial.flush();
+    client.println("Message successfully received.\n\n");
+    client.flush();
+  } else {
+    client.println("Malformed message. Enclose your message curly braces, eg {Hello world}. Max message size 250 characters.\n\n");
+    client.flush();
+  }
   delay(1);
 }

@@ -62,14 +62,16 @@ void loop() {
     // Serial.print("incoming data...");
     // Serial.println(wifiSerial.available());
     char c = wifiSerial.read();
-    if (byte(c) == 61) { // Equals sign
+    if (c == '{') {
         contentMarker=0;
         for (int i=0; i<255; i++) {
           content[i] = ' ';
         }
         capture = true;
         Serial.println("resetting content");
-    } else if (isPrintable(c)) {
+    } else if (c == '}') {
+        capture = false;
+    } else if (isPrintable(c) && capture) {
         content[contentMarker++] = c;
         textMin = contentMarker * -12;
         Serial.print(c);
@@ -94,7 +96,7 @@ void loop() {
   hue += 7;
   if(hue >= 1536) hue -= 1536;
 
-  delay(60);
+  delay(40);
   // Update display
   matrix.swapBuffers(false);
 }
