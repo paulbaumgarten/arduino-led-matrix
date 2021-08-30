@@ -32,6 +32,10 @@ Looking at the rear of the matrix, 6there is a ribbon cable connector set of pin
 * Once connected to the network, scroller will diplay it's IP address.
 * Connect to port 80 of the IP address. Send a string formatted as `message=This is an example message\n`.
 
----
+## Future
 
-Last updated 3 June 2020
+I'm planning to migrate from the Arduino Mega + ESP8266 combination to just one ESP32 to power the lot. These references look like they'll come in handy...
+
+https://www.instructables.com/RGB-LED-Matrix-With-an-ESP8266/
+https://hackaday.io/project/28945/logs?sort=oldest
+https://github.com/VGottselig/ESP32-RGB-Matrix-Display
